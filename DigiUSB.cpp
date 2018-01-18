@@ -243,7 +243,7 @@ const uchar MS_OS_20_DESCRIPTOR_SET[MS_OS_20_DESCRIPTOR_LENGTH] PROGMEM = {
 };
 
 
-#if 0
+
 PROGMEM const char usbHidReportDescriptor[22] = {
     /* USB report descriptor */
     0x06, 0x00, 0xff, // USAGE_PAGE (Generic Desktop)
@@ -257,7 +257,7 @@ PROGMEM const char usbHidReportDescriptor[22] = {
     0xb2, 0x02, 0x01, //   FEATURE (Data,Var,Abs,Buf)
     0xc0              // END_COLLECTION
 };
-#endif
+
 
 /* Since we define only one feature report, we don't use report-IDs (which
  * would be the first byte of the report). The entire report consists of 1
