@@ -26,31 +26,18 @@ section at the end of this file).
 
 /* ---------------------------- Hardware Config ---------------------------- */
 
-#if defined (__AVR_ATtiny44__) || defined (__AVR_ATtiny84__)
 #define USB_CFG_IOPORTNAME      B
-#define USB_CFG_DMINUS_BIT      1
-#define USB_CFG_DPLUS_BIT       2
-
-#elif defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny85__)
-#define USB_CFG_IOPORTNAME      B
-#define USB_CFG_DMINUS_BIT      3
-#define USB_CFG_DPLUS_BIT       4
-
-#elif defined (__AVR_ATtiny87__) || defined (__AVR_ATtiny167__)
-#define USB_CFG_IOPORTNAME      B
-#define USB_CFG_DMINUS_BIT      3
-#define USB_CFG_DPLUS_BIT       6
-
-#elif defined (__AVR_ATtiny461__) || defined (__AVR_ATtiny861__)
-#define USB_CFG_IOPORTNAME      B
-#define USB_CFG_DMINUS_BIT      5
-#define USB_CFG_DPLUS_BIT       6
-#else
-/*	ATtiny2313, ATmega8/48/88/168	*/
-#define USB_CFG_IOPORTNAME      D
-#define USB_CFG_DMINUS_BIT      3
-#define USB_CFG_DPLUS_BIT       2
-#endif
+/* This is the port where the USB bus is connected. When you configure it to
+ * "B", the registers PORTB, PINB and DDRB will be used.
+ */
+#	define USB_CFG_DMINUS_BIT      3
+/* This is the bit number in USB_CFG_IOPORT where the USB D- line is connected.
+ * This may be any bit in the port.
+ */
+#	define USB_CFG_DPLUS_BIT       4
+/* This is the bit number in USB_CFG_IOPORT where the USB D+ line is connected.
+ * This may be any bit in the port, but must be configured as a pin change interrupt.
+ */
 #define USB_CFG_CLOCK_KHZ       (F_CPU/1000)
 /* Clock rate of the AVR in kHz. Legal values are 12000, 12800, 15000, 16000,
  * 16500 and 20000. The 12.8 MHz and 16.5 MHz versions of the code require no
@@ -130,12 +117,12 @@ section at the end of this file).
  * The value is in milliamperes. [It will be divided by two since USB
  * communicates power requirements in units of 2 mA.]
  */
-#define USB_CFG_IMPLEMENT_FN_WRITE      1
+#define USB_CFG_IMPLEMENT_FN_WRITE      0
 /* Set this to 1 if you want usbFunctionWrite() to be called for control-out
  * transfers. Set it to 0 if you don't need it and want to save a couple of
  * bytes.
  */
-#define USB_CFG_IMPLEMENT_FN_READ       1
+#define USB_CFG_IMPLEMENT_FN_READ       0
 /* Set this to 1 if you need to send control replies which are generated
  * "on the fly" when usbFunctionRead() is called. If you only want to send
  * data from a static buffer, set it to 0 and return the data from
@@ -241,7 +228,7 @@ section at the end of this file).
  * with libusb: 0x16c0/0x5dc.  Use this VID/PID pair ONLY if you understand
  * the implications!
  */
-#define USB_CFG_DEVICE_VERSION  0x30, 0x01
+#define USB_CFG_DEVICE_VERSION  0x00, 0x01
 /* Version number of the device: Minor number first, then major number.
  */
 #define USB_CFG_VENDOR_NAME     'd','i','g','i','s','t','u','m','p','.','c','o','m'
@@ -278,7 +265,7 @@ section at the end of this file).
 /* See USB specification if you want to conform to an existing device class.
  * Class 0xff is "vendor specific".
  */
-#define USB_CFG_INTERFACE_CLASS     0xff  /* HID */ /* define class here if not at device level */
+#define USB_CFG_INTERFACE_CLASS     0x03  /* HID */ /* define class here if not at device level */
 #define USB_CFG_INTERFACE_SUBCLASS  0
 #define USB_CFG_INTERFACE_PROTOCOL  0
 /* See USB specification if you want to conform to an existing device class or
@@ -370,24 +357,14 @@ section at the end of this file).
  * which is not fully supported (such as IAR C) or if you use a differnt
  * interrupt than INT0, you may have to define some of these.
  */
- #if defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny85__) 
-#define USB_INTR_CFG            PCMSK
-#define USB_INTR_CFG_SET        (1<<USB_CFG_DPLUS_BIT)
-#define USB_INTR_ENABLE_BIT     PCIE
-#define USB_INTR_PENDING_BIT    PCIF
-#define USB_INTR_VECTOR         SIG_PIN_CHANGE
-#endif
-
-#if defined (__AVR_ATtiny87__) || defined (__AVR_ATtiny167__)
-#define USB_INTR_CFG            PCMSK1
-#define USB_INTR_CFG_SET        (1 << USB_CFG_DPLUS_BIT)
-#define USB_INTR_CFG_CLR        0
-#define USB_INTR_ENABLE         PCICR
-#define USB_INTR_ENABLE_BIT     PCIE1
-#define USB_INTR_PENDING        PCIFR
-#define USB_INTR_PENDING_BIT    PCIF1
-#define USB_INTR_VECTOR         PCINT1_vect
-#endif
+#   define USB_INTR_CFG            PCMSK
+#   define USB_INTR_CFG_SET        (1 << USB_CFG_DMINUS_BIT)
+#   define USB_INTR_CFG_CLR        0
+#   define USB_INTR_ENABLE         GIMSK
+#   define USB_INTR_ENABLE_BIT     PCIE
+#   define USB_INTR_PENDING        GIFR
+#   define USB_INTR_PENDING_BIT    PCIF
+#   define USB_INTR_VECTOR         PCINT0_vect
 
 
 #endif /* __usbconfig_h_included__ */
