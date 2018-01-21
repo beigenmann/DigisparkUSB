@@ -42,6 +42,7 @@ extern "C" {
 
 #include "DigiUSB.h"
 uchar debug_s = 0;
+uchar pluggedInterface = 1;
 // Ring buffer implementation nicked from HardwareSerial.cpp
 // TODO: Don't nick it. :)
 ring_buffer rx_buffer = {{0}, 0, 0};
@@ -242,7 +243,61 @@ const uchar MS_OS_20_DESCRIPTOR_SET[MS_OS_20_DESCRIPTOR_LENGTH] PROGMEM = {
     0x00, 0x00, 0x00,
 };
 
-
+PROGMEM const char usbDescriptorConfiguration[] = {
+    /* USB configuration descriptor */
+    9, /* sizeof(usbDescriptorConfiguration): length of descriptor in bytes */
+    USBDESCR_CONFIG, /* descriptor type */
+    18 + 7 * USB_CFG_HAVE_INTRIN_ENDPOINT + 7 * USB_CFG_HAVE_INTRIN_ENDPOINT3 +
+        (USB_CFG_DESCR_PROPS_HID & 0xff),
+    0,
+    /* total length of data returned (including inlined descriptors) */
+    1, /* number of interfaces in this configuration */
+    1, /* index of this configuration */
+    0, /* configuration name string index */
+#if USB_CFG_IS_SELF_POWERED
+    (1 << 7) | USBATTR_SELFPOWER, /* attributes */
+#else
+    (1 << 7), /* attributes */
+#endif
+    USB_CFG_MAX_BUS_POWER / 2, /* max USB current in 2mA units */
+                               /* interface descriptor follows inline: */
+    9, /* sizeof(usbDescrInterface): length of descriptor in bytes */
+    USBDESCR_INTERFACE, /* descriptor type */
+    0,                  /* index of this interface */
+    0,                  /* alternate setting for this interface */
+    USB_CFG_HAVE_INTRIN_ENDPOINT +
+        USB_CFG_HAVE_INTRIN_ENDPOINT3, /* endpoints excl 0: number of endpoint
+                                          descriptors to follow */
+    USB_CFG_INTERFACE_CLASS, USB_CFG_INTERFACE_SUBCLASS,
+    USB_CFG_INTERFACE_PROTOCOL, 0,   /* string index for interface */
+#if (USB_CFG_DESCR_PROPS_HID & 0xff) /* HID descriptor */
+    9,            /* sizeof(usbDescrHID): length of descriptor in bytes */
+    USBDESCR_HID, /* descriptor type: HID */
+    0x01, 0x01,   /* BCD representation of HID version */
+    0x00,         /* target country code */
+    0x01, /* number of HID Report (or other HID class) Descriptor infos to
+             follow */
+    0x22, /* descriptor type: report */
+    USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH,
+    0, /* total length of report descriptor */
+#endif
+#if USB_CFG_HAVE_INTRIN_ENDPOINT /* endpoint descriptor for endpoint 1 */
+    7,                           /* sizeof(usbDescrEndpoint) */
+    USBDESCR_ENDPOINT,           /* descriptor type = endpoint */
+    (char)0x81,                  /* IN endpoint number 1 */
+    0x03,                        /* attrib: Interrupt endpoint */
+    8, 0,                        /* maximum packet size */
+    USB_CFG_INTR_POLL_INTERVAL,  /* in ms */
+#endif
+#if USB_CFG_HAVE_INTRIN_ENDPOINT3 /* endpoint descriptor for endpoint 3 */
+    7,                            /* sizeof(usbDescrEndpoint) */
+    USBDESCR_ENDPOINT,            /* descriptor type = endpoint */
+    (char)0x83,                   /* IN endpoint number 1 */
+    0x03,                         /* attrib: Interrupt endpoint */
+    8, 0,                         /* maximum packet size */
+    USB_CFG_INTR_POLL_INTERVAL,   /* in ms */
+#endif
+};
 
 PROGMEM const char usbHidReportDescriptor[22] = {
     /* USB report descriptor */
@@ -257,7 +312,6 @@ PROGMEM const char usbHidReportDescriptor[22] = {
     0xb2, 0x02, 0x01, //   FEATURE (Data,Var,Abs,Buf)
     0xc0              // END_COLLECTION
 };
-
 
 /* Since we define only one feature report, we don't use report-IDs (which
  * would be the first byte of the report). The entire report consists of 1
@@ -283,6 +337,9 @@ uchar usbFunctionDescriptor(usbRequest_t *rq) {
     usbMsgPtr = (uchar *)(buffer);
     return length;
   } break;
+  case USBDESCR_CONFIG:
+    usbMsgPtr = (uchar *)usbDescriptorConfiguration;
+    return sizeof(usbDescriptorConfiguration);
   }
 }
 
@@ -338,14 +395,17 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     }
     }
   case WL_REQUEST_WINUSB: {
+
+#if 1
     int length = sizeof(MS_OS_20_DESCRIPTOR_SET);
     memcpy_P(buffer, &MS_OS_20_DESCRIPTOR_SET, length);
     usbMsgPtr = (uchar *)(buffer);
     return length;
-#if 0 
+#endif
+#if 0
     int length = sizeof(MS_OS_20_DESCRIPTOR_PREFIX);
     memcpy_P(buffer, &MS_OS_20_DESCRIPTOR_PREFIX, length);
-    memcpy(&buffer[length], &pluggedInterface, 1);
+    buffer[length] = pluggedInterface;
     length++;
     memcpy_P(&buffer[length], &MS_OS_20_DESCRIPTOR_SUFFIX,
              sizeof(MS_OS_20_DESCRIPTOR_SUFFIX));

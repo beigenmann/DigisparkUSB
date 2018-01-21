@@ -26,18 +26,31 @@ section at the end of this file).
 
 /* ---------------------------- Hardware Config ---------------------------- */
 
+#if defined (__AVR_ATtiny44__) || defined (__AVR_ATtiny84__)
 #define USB_CFG_IOPORTNAME      B
-/* This is the port where the USB bus is connected. When you configure it to
- * "B", the registers PORTB, PINB and DDRB will be used.
- */
-#	define USB_CFG_DMINUS_BIT      3
-/* This is the bit number in USB_CFG_IOPORT where the USB D- line is connected.
- * This may be any bit in the port.
- */
-#	define USB_CFG_DPLUS_BIT       4
-/* This is the bit number in USB_CFG_IOPORT where the USB D+ line is connected.
- * This may be any bit in the port, but must be configured as a pin change interrupt.
- */
+#define USB_CFG_DMINUS_BIT      1
+#define USB_CFG_DPLUS_BIT       2
+
+#elif defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny85__)
+#define USB_CFG_IOPORTNAME      B
+#define USB_CFG_DMINUS_BIT      3
+#define USB_CFG_DPLUS_BIT       4
+
+#elif defined (__AVR_ATtiny87__) || defined (__AVR_ATtiny167__)
+#define USB_CFG_IOPORTNAME      B
+#define USB_CFG_DMINUS_BIT      3
+#define USB_CFG_DPLUS_BIT       6
+
+#elif defined (__AVR_ATtiny461__) || defined (__AVR_ATtiny861__)
+#define USB_CFG_IOPORTNAME      B
+#define USB_CFG_DMINUS_BIT      5
+#define USB_CFG_DPLUS_BIT       6
+#else
+/*	ATtiny2313, ATmega8/48/88/168	*/
+#define USB_CFG_IOPORTNAME      D
+#define USB_CFG_DMINUS_BIT      3
+#define USB_CFG_DPLUS_BIT       2
+#endif
 #define USB_CFG_CLOCK_KHZ       (F_CPU/1000)
 /* Clock rate of the AVR in kHz. Legal values are 12000, 12800, 15000, 16000,
  * 16500 and 20000. The 12.8 MHz and 16.5 MHz versions of the code require no
@@ -251,8 +264,8 @@ section at the end of this file).
  * the macros. See the file USB-IDs-for-free.txt before you assign a name if
  * you use a shared VID/PID.
  */
-#define USB_CFG_SERIAL_NUMBER   'N', 'o', 'n', 'e' 
-#define USB_CFG_SERIAL_NUMBER_LEN   4
+#define USB_CFG_SERIAL_NUMBER   'P', 'i', '/', '4' 
+#define USB_CFG_SERIAL_NUMBER_LEN   4 
 /* Same as above for the serial number. If you don't want a serial number,
  * undefine the macros.
  * It may be useful to provide the serial number through other means than at
@@ -339,7 +352,7 @@ section at the end of this file).
  */
 
 #define USB_CFG_DESCR_PROPS_DEVICE                  0
-#define USB_CFG_DESCR_PROPS_CONFIGURATION           0
+#define USB_CFG_DESCR_PROPS_CONFIGURATION           USB_PROP_IS_DYNAMIC
 #define USB_CFG_DESCR_PROPS_STRINGS                 0
 #define USB_CFG_DESCR_PROPS_STRING_0                0
 #define USB_CFG_DESCR_PROPS_STRING_VENDOR           0
@@ -357,14 +370,24 @@ section at the end of this file).
  * which is not fully supported (such as IAR C) or if you use a differnt
  * interrupt than INT0, you may have to define some of these.
  */
-#   define USB_INTR_CFG            PCMSK
-#   define USB_INTR_CFG_SET        (1 << USB_CFG_DMINUS_BIT)
-#   define USB_INTR_CFG_CLR        0
-#   define USB_INTR_ENABLE         GIMSK
-#   define USB_INTR_ENABLE_BIT     PCIE
-#   define USB_INTR_PENDING        GIFR
-#   define USB_INTR_PENDING_BIT    PCIF
-#   define USB_INTR_VECTOR         PCINT0_vect
+ #if defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny85__) 
+#define USB_INTR_CFG            PCMSK
+#define USB_INTR_CFG_SET        (1<<USB_CFG_DPLUS_BIT)
+#define USB_INTR_ENABLE_BIT     PCIE
+#define USB_INTR_PENDING_BIT    PCIF
+#define USB_INTR_VECTOR         SIG_PIN_CHANGE
+#endif
+
+#if defined (__AVR_ATtiny87__) || defined (__AVR_ATtiny167__)
+#define USB_INTR_CFG            PCMSK1
+#define USB_INTR_CFG_SET        (1 << USB_CFG_DPLUS_BIT)
+#define USB_INTR_CFG_CLR        0
+#define USB_INTR_ENABLE         PCICR
+#define USB_INTR_ENABLE_BIT     PCIE1
+#define USB_INTR_PENDING        PCIFR
+#define USB_INTR_PENDING_BIT    PCIF1
+#define USB_INTR_VECTOR         PCINT1_vect
+#endif
 
 
 #endif /* __usbconfig_h_included__ */
